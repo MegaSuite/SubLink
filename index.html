@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vless格式转换</title>
+    <link rel="icon" href="asset/favicon.png" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+        textarea {
+            width: 80%;
+            height: 80px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            resize: none;
+        }
+        button {
+            margin-bottom: 10px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            width: 80%;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .copy-button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .copy-button:hover {
+            background-color: #218838;
+        }
+        h1, h3 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vless订阅格式转换</h1>
+    <textarea id="inputText" placeholder="在此输入原始格式"></textarea>
+    <button onclick="convertText()">转换</button>
+    <div class="output">
+        <h3>Clash格式：</h3>
+        <textarea id="output1" readonly></textarea>
+        <button class="copy-button" onclick="copyToClipboard('output1')">复制</button>
+        <h3>Quantumultx格式：</h3>
+        <textarea id="output2" readonly></textarea>
+        <button class="copy-button" onclick="copyToClipboard('output2')">复制</button>
+    </div>
+
+    <script>
+        function parseVlessUrl(url) {
+            const regex = /^vless:\/\/([0-9a-fA-F-]+)@([\w.-]+):(\d+)\?type=ws&security=tls&path=([^&]+)&sni=([\w.-]+)&fp=([\w.-]+)#([\w.-]+)$/;
+            const match = url.match(regex);
+            if (match) {
+                return {
+                    uuid: match[1],
+                    server: match[2],
+                    port: match[3],
+                    path: decodeURIComponent(match[4]),
+                    sni: match[5],
+                    name: match[7]
+                };
+            }
+            return null;
+        }
+
+        function convertText() {
+            const inputText = document.getElementById('inputText').value;
+            const lines = inputText.split('\n');
+            let output1 = '';
+            let output2 = '';
+
+            lines.forEach(line => {
+                const parsed = parseVlessUrl(line.trim());
+                if (parsed) {
+                    output1 += `  - {name: ${parsed.name}, server: ${parsed.server}, port: ${parsed.port}, type: vless, uuid: ${parsed.uuid}, tls: true, sni: ${parsed.sni}, skip-cert-verify: true, network: ws, ws-opts: {path: ${parsed.path}}}\n`;
+                    output2 += `vless = ${parsed.server}:${parsed.port}, method=none, password=${parsed.uuid}, obfs=wss, obfs-uri=${parsed.path}, tls-verification=false, tls-host=${parsed.sni}, fast-open=false, udp-relay=false, tag=${parsed.name}\n`;
+                }
+            });
+
+            document.getElementById('output1').value = output1.trim();
+            document.getElementById('output2').value = output2.trim();
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).value;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('复制成功!');
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+    </script>
+</body>
+</html>
