@@ -56,6 +56,18 @@
         .copy-button:hover {
             background-color: #218838;
         }
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: none;
+            z-index: 1000;
+        }
         h1, h3 {
             text-align: center;
         }
@@ -73,6 +85,7 @@
         <textarea id="output2" readonly></textarea>
         <button class="copy-button" onclick="copyToClipboard('output2')">复制</button>
     </div>
+    <div id="notification" class="notification">复制成功!</div>
 
     <script>
         function parseVlessUrl(url) {
@@ -112,10 +125,19 @@
         function copyToClipboard(elementId) {
             const text = document.getElementById(elementId).value;
             navigator.clipboard.writeText(text).then(() => {
-                alert('复制成功!');
+                showNotification('复制成功!');
             }).catch(err => {
                 console.error('复制失败:', err);
             });
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
         }
     </script>
 </body>
