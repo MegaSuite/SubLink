@@ -89,7 +89,7 @@
 
     <script>
         function parseVlessUrl(url) {
-            const regex = /^vless:\/\/([0-9a-fA-F-]+)@([\w.-]+):(\d+)\?type=ws&security=tls&path=([^&]+)&sni=([\w.-]+)&fp=([\w.-]+)#([\w.-]+)$/;
+            const regex = /^vless:\/\/([0-9a-fA-F-]+)@([\w.-]+):(\d+)\?type=ws&security=tls&path=([^&]+)&sni=([\w.-]+)&fp=([\w.-]+)#(.*)$/;
             const match = url.match(regex);
             if (match) {
                 return {
