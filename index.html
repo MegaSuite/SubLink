@@ -143,6 +143,9 @@
                         result += `, sni: ${parsed.sni}`;
                     }
                     
+                    // 添加 skip-cert-verify
+                    result += ', skip-cert-verify: true';
+                    
                     // 添加 client-fingerprint
                     if (parsed.fp) {
                         result += `, client-fingerprint: ${parsed.fp}`;
