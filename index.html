@@ -87,15 +87,16 @@
     <script>
         function parseVlessUrl(url) {
             // 匹配基本结构: vless://uuid@server:port?params#name
-            const regex = /^vless:\/\/([^@]+)@([^:]+):(\d+)\?(.+)#(.*)$/;
+            const regex = /^([^:]+):\/\/([^@]+)@([^:]+):(\d+)\?(.+)#(.*)$/;
             const match = url.match(regex);
             if (!match) return null;
 
-            const uuid = match[1];
-            const server = match[2];
-            const port = match[3];
-            const paramsStr = match[4];
-            const name = match[5];
+            const type = match[1];
+            const uuid = match[2];
+            const server = match[3];
+            const port = match[4];
+            const paramsStr = match[5];
+            const name = match[6];
 
             // 解析参数
             const params = {};
@@ -106,11 +107,12 @@
             });
 
             return {
+                type: type, // :// 之前的字段作为 type
                 uuid: uuid,
                 server: server,
                 port: port,
                 name: name,
-                type: params.type || 'vless',
+                network: params.type || '', // 原文中的 type 参数作为 network
                 encryption: params.encryption || '',
                 path: params.path || '/',
                 security: params.security || '',
@@ -147,8 +149,11 @@
                     }
                     
                     // 添加 network 和 ws-opts
-                    if (parsed.type === 'ws') {
-                        result += `, network: ws, ws-opts: {path: ${parsed.path}}`;
+                    if (parsed.network) {
+                        result += `, network: ${parsed.network}`;
+                        if (parsed.network === 'ws' && parsed.path) {
+                            result += `, ws-opts: {path: ${parsed.path}}`;
+                        }
                     }
                     
                     // 添加 alpn (转换为数组格式)
