@@ -81,45 +81,98 @@
         <h3>Clash格式：</h3>
         <textarea id="output1" readonly></textarea>
         <button class="copy-button" onclick="copyToClipboard('output1')">复制</button>
-        <h3>Quantumultx格式：</h3>
-        <textarea id="output2" readonly></textarea>
-        <button class="copy-button" onclick="copyToClipboard('output2')">复制</button>
     </div>
     <div id="notification" class="notification">复制成功!</div>
 
     <script>
         function parseVlessUrl(url) {
-            const regex = /^vless:\/\/([0-9a-fA-F-]+)@([\w.-]+):(\d+)\?type=ws&security=tls&path=([^&]+)&sni=([\w.-]+)&fp=([\w.-]+)#(.*)$/;
+            // 匹配基本结构: vless://uuid@server:port?params#name
+            const regex = /^vless:\/\/([^@]+)@([^:]+):(\d+)\?(.+)#(.*)$/;
             const match = url.match(regex);
-            if (match) {
-                return {
-                    uuid: match[1],
-                    server: match[2],
-                    port: match[3],
-                    path: decodeURIComponent(match[4]),
-                    sni: match[5],
-                    name: match[7]
-                };
-            }
-            return null;
+            if (!match) return null;
+
+            const uuid = match[1];
+            const server = match[2];
+            const port = match[3];
+            const paramsStr = match[4];
+            const name = match[5];
+
+            // 解析参数
+            const params = {};
+            paramsStr.split('&').forEach(param => {
+                const [key, value] = param.split('=');
+                // ech字段不进行URL解码，保持原文
+                params[key] = value ? (key === 'ech' ? value : decodeURIComponent(value)) : '';
+            });
+
+            return {
+                uuid: uuid,
+                server: server,
+                port: port,
+                name: name,
+                type: params.type || 'vless',
+                encryption: params.encryption || '',
+                path: params.path || '/',
+                security: params.security || '',
+                sni: params.sni || server,
+                fp: params.fp || '',
+                alpn: params.alpn || '',
+                ech: params.ech || ''
+            };
         }
 
         function convertText() {
             const inputText = document.getElementById('inputText').value;
             const lines = inputText.split('\n');
             let output1 = '';
-            let output2 = '';
 
             lines.forEach(line => {
                 const parsed = parseVlessUrl(line.trim());
                 if (parsed) {
-                    output1 += `  - {name: ${parsed.name}, server: ${parsed.server}, port: ${parsed.port}, type: vless, uuid: ${parsed.uuid}, tls: true, sni: ${parsed.sni}, skip-cert-verify: true, network: ws, ws-opts: {path: ${parsed.path}}}\n`;
-                    output2 += `vless = ${parsed.server}:${parsed.port}, method=none, password=${parsed.uuid}, obfs=wss, obfs-uri=${parsed.path}, tls-verification=false, tls-host=${parsed.sni}, fast-open=false, udp-relay=false, tag=${parsed.name}\n`;
+                    let result = `  - {name: ${parsed.name}, server: ${parsed.server}, port: ${parsed.port}, type: ${parsed.type}, uuid: ${parsed.uuid}`;
+                    
+                    // 添加 tls
+                    if (parsed.security === 'tls') {
+                        result += ', tls: true';
+                    }
+                    
+                    // 添加 sni
+                    if (parsed.sni) {
+                        result += `, sni: ${parsed.sni}`;
+                    }
+                    
+                    // 添加 client-fingerprint
+                    if (parsed.fp) {
+                        result += `, client-fingerprint: ${parsed.fp}`;
+                    }
+                    
+                    // 添加 network 和 ws-opts
+                    if (parsed.type === 'ws') {
+                        result += `, network: ws, ws-opts: {path: ${parsed.path}}`;
+                    }
+                    
+                    // 添加 alpn (转换为数组格式)
+                    if (parsed.alpn) {
+                        const alpnArray = parsed.alpn.split(',').map(item => item.trim());
+                        result += `, alpn: [${alpnArray.join(', ')}]`;
+                    }
+                    
+                    // 添加 encryption
+                    if (parsed.encryption) {
+                        result += `, encryption: "${parsed.encryption}"`;
+                    }
+                    
+                    // 添加 ech
+                    if (parsed.ech) {
+                        result += `, ech: "${parsed.ech}"`;
+                    }
+                    
+                    result += ' }\n';
+                    output1 += result;
                 }
             });
 
             document.getElementById('output1').value = output1.trim();
-            document.getElementById('output2').value = output2.trim();
         }
 
         function copyToClipboard(elementId) {
